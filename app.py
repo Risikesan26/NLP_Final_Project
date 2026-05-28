@@ -1069,6 +1069,111 @@ elif page == "📂 Data Explorer":
 
     st.markdown("<br>", unsafe_allow_html=True)
     
+    # Dataset statistics and distributions section
+    st.markdown("<div class='section-label'>Dataset Statistics & Distributions</div>", unsafe_allow_html=True)
+    total_reviews = len(filtered_df)
+    if total_reviews > 0:
+        avg_rating = filtered_df["Rating"].mean()
+        avg_confidence = filtered_df["Confidence"].mean()
+        pos_pct = (filtered_df["Sentiment"] == "Positive").sum() / total_reviews * 100
+        neg_pct = (filtered_df["Sentiment"] == "Negative").sum() / total_reviews * 100
+        neu_pct = (filtered_df["Sentiment"] == "Neutral").sum() / total_reviews * 100
+        issues_count = (filtered_df["Issues"] != "None").sum()
+    else:
+        avg_rating = 0.0
+        avg_confidence = 0.0
+        pos_pct = 0.0
+        neg_pct = 0.0
+        neu_pct = 0.0
+        issues_count = 0
+
+    col1_dist, col2_dist, col3_dist = st.columns([4, 3, 3])
+    
+    with col1_dist:
+        st.markdown(f"""
+        <div class='card' style='padding: 1.2rem; height: 100%; min-height: 250px;'>
+            <div style='font-family:Syne,sans-serif;font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:0.6rem;'>Summary Statistics</div>
+            <div style='display:flex; flex-direction:column; gap:0.5rem; color:#94a3b8; font-size:0.85rem;'>
+                <div style='display:flex; justify-content:space-between; border-bottom:1px solid #1f2d45; padding-bottom:2px;'>
+                    <span>Total Matches:</span>
+                    <strong style='color:#e2e8f0'>{total_reviews} reviews</strong>
+                </div>
+                <div style='display:flex; justify-content:space-between; border-bottom:1px solid #1f2d45; padding-bottom:2px;'>
+                    <span>Average User Rating:</span>
+                    <strong style='color:#e2e8f0'>{avg_rating:.2f} ★</strong>
+                </div>
+                <div style='display:flex; justify-content:space-between; border-bottom:1px solid #1f2d45; padding-bottom:2px;'>
+                    <span>Average Confidence:</span>
+                    <strong style='color:#e2e8f0'>{avg_confidence:.1f}%</strong>
+                </div>
+                <div style='display:flex; justify-content:space-between; border-bottom:1px solid #1f2d45; padding-bottom:2px;'>
+                    <span>Positive Reviews:</span>
+                    <strong style='color:#22c55e'>{pos_pct:.1f}% ({int((filtered_df["Sentiment"] == "Positive").sum())})</strong>
+                </div>
+                <div style='display:flex; justify-content:space-between; border-bottom:1px solid #1f2d45; padding-bottom:2px;'>
+                    <span>Negative Reviews:</span>
+                    <strong style='color:#f43f5e'>{neg_pct:.1f}% ({int((filtered_df["Sentiment"] == "Negative").sum())})</strong>
+                </div>
+                <div style='display:flex; justify-content:space-between;'>
+                    <span>Neutral Reviews:</span>
+                    <strong style='color:#f59e0b'>{neu_pct:.1f}% ({int((filtered_df["Sentiment"] == "Neutral").sum())})</strong>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col2_dist:
+        st.markdown("<div style='font-family:Syne,sans-serif;font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:0.4rem;text-align:center;'>Sentiment Distribution (Pie)</div>", unsafe_allow_html=True)
+        if total_reviews > 0:
+            import altair as alt
+            pie_data = pd.DataFrame({
+                "Sentiment": ["Positive", "Neutral", "Negative"],
+                "Count": [
+                    int((filtered_df["Sentiment"] == "Positive").sum()),
+                    int((filtered_df["Sentiment"] == "Neutral").sum()),
+                    int((filtered_df["Sentiment"] == "Negative").sum())
+                ]
+            })
+            pie_chart = alt.Chart(pie_data).mark_arc(innerRadius=45).encode(
+                theta=alt.Theta(field="Count", type="quantitative"),
+                color=alt.Color(field="Sentiment", type="nominal", scale=alt.Scale(
+                    domain=["Positive", "Neutral", "Negative"],
+                    range=["#22c55e", "#f59e0b", "#f43f5e"]
+                ), legend=alt.Legend(title=None, orient="bottom", labelColor="#94a3b8")),
+                tooltip=["Sentiment", "Count"]
+            ).properties(
+                height=180
+            ).configure_view(
+                strokeOpacity=0
+            )
+            st.altair_chart(pie_chart, use_container_width=True)
+        else:
+            st.info("No data matched.")
+            
+    with col3_dist:
+        st.markdown("<div style='font-family:Syne,sans-serif;font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:0.4rem;text-align:center;'>Rating Distribution (Bar)</div>", unsafe_allow_html=True)
+        if total_reviews > 0:
+            import altair as alt
+            rating_counts = filtered_df["Rating"].value_counts().reindex([1, 2, 3, 4, 5]).fillna(0).reset_index()
+            rating_counts.columns = ["Rating", "Count"]
+            rating_counts["Rating"] = rating_counts["Rating"].astype(int).astype(str) + "★"
+            
+            bar_chart = alt.Chart(rating_counts).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+                x=alt.X("Rating:N", axis=alt.Axis(labelAngle=0, labelColor="#94a3b8", title=None)),
+                y=alt.Y("Count:Q", axis=alt.Axis(labelColor="#94a3b8", title=None)),
+                color=alt.value("#4f8eff"),
+                tooltip=["Rating", "Count"]
+            ).properties(
+                height=180
+            ).configure_view(
+                strokeOpacity=0
+            )
+            st.altair_chart(bar_chart, use_container_width=True)
+        else:
+            st.info("No data matched.")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     st.markdown(f"""
     <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem'>
         <div class='section-label'>Matched Records ({len(filtered_df)} / {len(active_df)})</div>
