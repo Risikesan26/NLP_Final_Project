@@ -14,3 +14,8 @@ UI_Variation/
 # Artifact logs
 step7_raw.json
 step9_content.txt
+
+# Local model export folders
+my_hf_model/
+scratch_model_export/
+export_to_hf.py

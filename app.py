@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 import joblib
 import torch
 import torch.nn.functional as F
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -33,30 +33,10 @@ def load_ml_models():
     if not hasattr(lr, "multi_class"):
         lr.multi_class = "auto"
     
-    # Load Roberta model and apply version patches
-    roberta_pkg = joblib.load("cardiffnlp_roberta.pkl")
-    roberta_model = roberta_pkg['model']
-    
-    if not hasattr(roberta_model.config, "torchscript"):
-        roberta_model.config.torchscript = False
-        
-    for name, module in roberta_model.named_modules():
-        class_name = module.__class__.__name__
-        if class_name == "RobertaEmbeddings":
-            if not hasattr(module, "position_embedding_type"):
-                module.position_embedding_type = "absolute"
-        elif class_name == "RobertaModel":
-            if not hasattr(module, "attn_implementation"):
-                module.attn_implementation = "eager"
-        elif class_name == "RobertaEncoder":
-            if not hasattr(module, "gradient_checkpointing"):
-                module.gradient_checkpointing = False
-        elif class_name == "RobertaSelfAttention":
-            if not hasattr(module, "position_embedding_type"):
-                module.position_embedding_type = "absolute"
-                
+    # Load Roberta model and tokenizer from Hugging Face Hub
+    roberta_model = AutoModelForSequenceClassification.from_pretrained("Risikesan/cardiffnlp_roberta")
+    roberta_tokenizer = AutoTokenizer.from_pretrained("Risikesan/cardiffnlp_roberta")
     roberta_model.eval()
-    roberta_tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-roberta-base-sentiment-latest")
     
     return tfidf, lr, nb, roberta_model, roberta_tokenizer
 
