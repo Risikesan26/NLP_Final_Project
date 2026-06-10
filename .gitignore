@@ -7,3 +7,10 @@ __pycache__/
 env/
 venv/
 ENV/
+UI_Variation/
+# Serialization models
+*.pkl
+*.joblib
+# Artifact logs
+step7_raw.json
+step9_content.txt
