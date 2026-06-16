@@ -33,7 +33,9 @@ def load_ml_models():
     if not hasattr(lr, "multi_class"):
         lr.multi_class = "auto"
     
-    # Load Roberta model and tokenizer locally if available, else from Hugging Face Hub
+    # Load RoBERTa model and tokenizer from the bundled local folder (app_roberta_model/).
+    # This folder is committed to the repo via Git LFS so it is always available on
+    # Streamlit Cloud without any network dependency.
     import os
     model_path = "app_roberta_model"
     roberta_model = None
@@ -41,24 +43,14 @@ def load_ml_models():
     roberta_error = None
     
     try:
-        if os.path.exists(model_path) and os.path.isdir(model_path):
-            roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
-            roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
-        else:
-            # Force a writable cache directory on Streamlit Cloud (Linux)
-            if os.name != "nt":
-                os.environ["HF_HOME"] = "/tmp/huggingface_cache"
-                os.environ["TRANSFORMERS_CACHE"] = "/tmp/huggingface_cache"
-            roberta_model = AutoModelForSequenceClassification.from_pretrained("Risikesan/cardiffnlp_roberta")
-            roberta_tokenizer = AutoTokenizer.from_pretrained("Risikesan/cardiffnlp_roberta")
-        if roberta_model is not None:
-            roberta_model.eval()
+        roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
+        roberta_model.eval()
     except Exception as e:
         import traceback
         roberta_error = f"{type(e).__name__}: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
         print(f"Error loading RoBERTa model: {e}")
         traceback.print_exc()
-        # Fallbacks are handled gracefully at inference time
     
     return tfidf, lr, nb, roberta_model, roberta_tokenizer, roberta_error
 
