@@ -33,28 +33,19 @@ def load_ml_models():
     if not hasattr(lr, "multi_class"):
         lr.multi_class = "auto"
     
-    # Load RoBERTa model and tokenizer from the bundled local folder (app_roberta_model/).
-    # This folder is committed to the repo via Git LFS so it is always available on
-    # Streamlit Cloud without any network dependency.
-    import os
+    # Load RoBERTa (DistilBERT) model from the bundled local folder committed via Git LFS.
+    # use_safetensors=False forces PyTorch bin format (pytorch_model.bin) which is
+    # universally supported across all transformers versions including on Streamlit Cloud.
     model_path = "app_roberta_model"
-    roberta_model = None
-    roberta_tokenizer = None
-    roberta_error = None
+    roberta_model = AutoModelForSequenceClassification.from_pretrained(
+        model_path, use_safetensors=False
+    )
+    roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
+    roberta_model.eval()
     
-    try:
-        roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
-        roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
-        roberta_model.eval()
-    except Exception as e:
-        import traceback
-        roberta_error = f"{type(e).__name__}: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
-        print(f"Error loading RoBERTa model: {e}")
-        traceback.print_exc()
-    
-    return tfidf, lr, nb, roberta_model, roberta_tokenizer, roberta_error
+    return tfidf, lr, nb, roberta_model, roberta_tokenizer
 
-tfidf_vectorizer, lr_model, nb_model, roberta_model, roberta_tokenizer, roberta_error = load_ml_models()
+tfidf_vectorizer, lr_model, nb_model, roberta_model, roberta_tokenizer = load_ml_models()
 
 # ── ML Helper Functions ───────────────────────────────────────────────────────
 def predict_ml(model, text: str) -> dict:
@@ -94,12 +85,9 @@ def predict_roberta(text: str) -> dict:
             "probabilities": {"Positive": 0.0, "Negative": 0.0, "Neutral": 0.0},
             "word_count": 0
         }
-    
-    if roberta_model is None or roberta_tokenizer is None:
-        # Fall back to Logistic Regression model
-        return predict_ml(lr_model, text)
-        
+
     inputs = roberta_tokenizer(text, return_tensors="pt")
+
     # Pop token_type_ids if present (needed for DistilBERT models)
     inputs.pop("token_type_ids", None)
     with torch.no_grad():
@@ -671,10 +659,6 @@ with st.sidebar:
         key="classifier_model"
     )
 
-    if classifier_model == "RoBERTa (Transformer)" and (roberta_model is None or roberta_tokenizer is None):
-        st.warning("⚠️ RoBERTa model is unavailable (Hugging Face loading error). Falling back to Logistic Regression predictions.")
-        with st.expander("🔍 Diagnostic Error Details", expanded=True):
-            st.code(roberta_error or "No error message captured.")
 
     st.markdown("<hr style='border-color:#2A3A50;margin:0.8rem 0'>", unsafe_allow_html=True)
     st.markdown("<div style='font-size:0.75rem;color:#94A3B8;margin-bottom:0.4rem'>Active Dataset</div>", unsafe_allow_html=True)
