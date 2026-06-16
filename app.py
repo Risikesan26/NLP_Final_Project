@@ -113,6 +113,93 @@ def predict_roberta(text: str) -> dict:
     }
 
 
+# ── Word Influence Helpers ────────────────────────────────────────────────────
+def get_word_influence_ml(model, text: str, predicted_class: str):
+    """Return (positive_words, negative_words) lists of (word, score) tuples
+    by multiplying TF-IDF weights with the model's per-class coefficients."""
+    try:
+        vectorized = tfidf_vectorizer.transform([text])
+        feature_names = tfidf_vectorizer.get_feature_names_out()
+        classes = list(model.classes_)
+        if predicted_class not in classes:
+            return [], []
+        class_idx = classes.index(predicted_class)
+
+        # LR has coef_; NB has feature_log_prob_
+        if hasattr(model, "coef_"):
+            coefs = model.coef_[class_idx]
+        else:
+            coefs = model.feature_log_prob_[class_idx]
+
+        nonzero_indices = vectorized.nonzero()[1]
+        word_scores = []
+        for idx in nonzero_indices:
+            word = feature_names[idx]
+            tfidf_val = float(vectorized[0, idx])
+            influence = tfidf_val * float(coefs[idx])
+            word_scores.append((word, influence))
+
+        word_scores.sort(key=lambda x: x[1], reverse=True)
+        positive = [(w, s) for w, s in word_scores if s > 0][:6]
+        negative = [(w, abs(s)) for w, s in word_scores if s < 0][:6]
+        negative.sort(key=lambda x: x[1], reverse=True)
+        return positive, negative
+    except Exception:
+        return [], []
+
+
+def get_word_influence_roberta(text: str, predicted_class: str):
+    """Gradient × embedding saliency for RoBERTa/DistilBERT.
+    Returns (top_tokens, []) where top_tokens are (token, score) sorted by
+    absolute influence on the predicted class logit."""
+    try:
+        inputs = roberta_tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=128
+        )
+        inputs.pop("token_type_ids", None)
+        input_ids = inputs["input_ids"]
+        attention_mask = inputs.get("attention_mask")
+
+        embed_layer = roberta_model.get_input_embeddings()
+
+        with torch.enable_grad():
+            roberta_model.zero_grad()
+            embeddings = embed_layer(input_ids).detach().requires_grad_(True)
+            outputs = roberta_model(inputs_embeds=embeddings, attention_mask=attention_mask)
+            logits = outputs.logits
+
+            if hasattr(roberta_model.config, "id2label") and roberta_model.config.id2label:
+                id2label = roberta_model.config.id2label
+                classes = [id2label[i] for i in sorted(id2label.keys(), key=lambda x: int(x))]
+            else:
+                classes = ["Negative", "Neutral", "Positive"]
+
+            if predicted_class not in classes:
+                return [], []
+            class_idx = classes.index(predicted_class)
+
+            logits[0, class_idx].backward()
+            # Saliency = |grad · embedding| summed over hidden dim
+            saliency = (embeddings.grad * embeddings).sum(dim=-1).abs().squeeze()
+
+        tokens = roberta_tokenizer.convert_ids_to_tokens(input_ids[0])
+        special = {roberta_tokenizer.cls_token, roberta_tokenizer.sep_token,
+                   roberta_tokenizer.pad_token, "[CLS]", "[SEP]", "[PAD]",
+                   "<s>", "</s>", "<pad>"}
+        token_scores = []
+        for tok, score in zip(tokens, saliency.tolist()):
+            if tok in special:
+                continue
+            clean = tok.replace("##", "").replace("Ġ", "").replace("▁", "").strip()
+            if clean:
+                token_scores.append((clean, score))
+
+        token_scores.sort(key=lambda x: x[1], reverse=True)
+        return token_scores[:8], []
+    except Exception:
+        return [], []
+
+
 # ── Global CSS — STARLIGHT PREMIUM THEME ────────────────────────────────────
 st.markdown("""
 <style>
@@ -931,6 +1018,88 @@ elif page == "🔍 Text Analyzer":
                         </div>""", unsafe_allow_html=True)
                 else:
                     st.markdown("<span style='color:#94A3B8;font-size:.85rem'>No specific product issues detected in text.</span>", unsafe_allow_html=True)
+
+            # ── Word Influence Analysis ──────────────────────────────────────
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div class='section-label'>🔑 Word Influence Analysis</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div style='font-size:0.8rem;color:#94a3b8;margin-bottom:0.8rem'>"
+                "Which specific words in your review drove the sentiment prediction."
+                "</div>",
+                unsafe_allow_html=True
+            )
+
+            if classifier_model == "RoBERTa (Transformer)":
+                top_tokens, _ = get_word_influence_roberta(review_text, sent)
+                if top_tokens:
+                    max_score = max(s for _, s in top_tokens) or 1
+                    html_inf = "<div style='background:#141C2E;border:1px solid #2A3A50;border-radius:12px;padding:1rem'>"
+                    html_inf += "<div style='font-size:0.78rem;color:#94a3b8;margin-bottom:0.6rem'>Most influential tokens (gradient × embedding saliency):</div>"
+                    for tok, score in top_tokens:
+                        bar_w = int(score / max_score * 100)
+                        html_inf += f"""
+                        <div style='margin-bottom:0.45rem'>
+                            <div style='display:flex;justify-content:space-between;margin-bottom:2px'>
+                                <span style='color:#F8FAFC;font-family:JetBrains Mono,monospace;font-size:.82rem'>{tok}</span>
+                                <span style='color:#94a3b8;font-size:.75rem'>{score:.3f}</span>
+                            </div>
+                            <div class='timeline-bar'>
+                                <div class='timeline-fill' style='width:{bar_w}%;background:#38BDF8'></div>
+                            </div>
+                        </div>"""
+                    html_inf += "</div>"
+                    st.markdown(html_inf, unsafe_allow_html=True)
+                else:
+                    st.info("Word influence unavailable for this input.")
+            else:
+                # LR or NB
+                ml_model = lr_model if classifier_model == "Logistic Regression" else nb_model
+                pos_words, neg_words = get_word_influence_ml(ml_model, review_text, sent)
+                wi_col_l, wi_col_r = st.columns(2)
+                with wi_col_l:
+                    st.markdown(
+                        f"<div style='font-size:0.82rem;font-weight:700;color:#34D399;margin-bottom:0.5rem'>"
+                        f"🟢 Supporting '{sent}'</div>",
+                        unsafe_allow_html=True
+                    )
+                    if pos_words:
+                        max_s = max(s for _, s in pos_words) or 1
+                        for word, score in pos_words:
+                            bar_w = int(score / max_s * 100)
+                            st.markdown(f"""
+                            <div style='margin-bottom:0.4rem'>
+                                <div style='display:flex;justify-content:space-between;margin-bottom:2px'>
+                                    <span style='color:#F8FAFC;font-family:JetBrains Mono,monospace;font-size:.8rem'>{word}</span>
+                                    <span style='color:#94a3b8;font-size:.72rem'>{score:.3f}</span>
+                                </div>
+                                <div class='timeline-bar'>
+                                    <div class='timeline-fill' style='width:{bar_w}%;background:#34D399'></div>
+                                </div>
+                            </div>""", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<span style='color:#94A3B8;font-size:.82rem'>No strong positive signals found.</span>", unsafe_allow_html=True)
+                with wi_col_r:
+                    st.markdown(
+                        "<div style='font-size:0.82rem;font-weight:700;color:#FB7185;margin-bottom:0.5rem'>"
+                        "🔴 Opposing the prediction</div>",
+                        unsafe_allow_html=True
+                    )
+                    if neg_words:
+                        max_s = max(s for _, s in neg_words) or 1
+                        for word, score in neg_words:
+                            bar_w = int(score / max_s * 100)
+                            st.markdown(f"""
+                            <div style='margin-bottom:0.4rem'>
+                                <div style='display:flex;justify-content:space-between;margin-bottom:2px'>
+                                    <span style='color:#F8FAFC;font-family:JetBrains Mono,monospace;font-size:.8rem'>{word}</span>
+                                    <span style='color:#94a3b8;font-size:.72rem'>{score:.3f}</span>
+                                </div>
+                                <div class='timeline-bar'>
+                                    <div class='timeline-fill' style='width:{bar_w}%;background:#FB7185'></div>
+                                </div>
+                            </div>""", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<span style='color:#94A3B8;font-size:.82rem'>No opposing signals found.</span>", unsafe_allow_html=True)
 
         elif analyze_btn:
             st.warning("Please paste a review before analyzing.")
