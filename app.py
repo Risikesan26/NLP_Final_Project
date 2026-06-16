@@ -26,16 +26,16 @@ st.set_page_config(
 # ══════════════════════════════════════════════════════════════════════════════
 @st.cache_resource
 def load_ml_models():
-    tfidf = joblib.load("tfidf_model.joblib")
-    lr = joblib.load("logistic_regression_model.pkl")
-    nb = joblib.load("naive_bayes_model.pkl")
+    tfidf = joblib.load("models/tfidf_model.joblib")
+    lr = joblib.load("models/logistic_regression_model.pkl")
+    nb = joblib.load("models/naive_bayes_model.pkl")
     # Fix version compatibility for Logistic Regression
     if not hasattr(lr, "multi_class"):
         lr.multi_class = "auto"
     
     # Load RoBERTa (DistilBERT) model from the bundled local folder committed via Git LFS.
     # pytorch_model.bin is present so transformers loads it automatically on all versions.
-    model_path = "app_roberta_model"
+    model_path = "models/app_roberta_model"
     roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
     roberta_model.eval()

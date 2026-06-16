@@ -3,7 +3,9 @@ from huggingface_hub import HfApi, login
 
 def upload():
     repo_id = "Risikesan/cardiffnlp_roberta"
-    folder_path = "app_roberta_model"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    folder_path = os.path.join(project_root, "models", "app_roberta_model")
     
     if not os.path.exists(folder_path):
         print(f"Error: Local model folder '{folder_path}' not found!")
