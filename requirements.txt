@@ -7,3 +7,5 @@ tf-keras
 tokenizers
 torch
 transformers
+huggingface_hub
+safetensors
