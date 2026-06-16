@@ -1,4 +1,4 @@
-# 🔍 ReviewLens: Premium App Sentiment Classifier & NLP Insights Dashboard
+# 🔍 ReviewLens: App Sentiment Classifier & NLP Insights Dashboard
 
 ReviewLens is a production-grade NLP application designed to parse, classify, and extract actionable insights from app store reviews. Driven by a combination of traditional machine learning and state-of-the-art Deep Learning (RoBERTa Transformers), ReviewLens helps product and engineering teams cut through the noise, resolve software issues faster, and prevent user churn.
 
