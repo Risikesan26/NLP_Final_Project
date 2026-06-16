@@ -907,38 +907,9 @@ elif page == "🔍 Text Analyzer":
     mode = st.tabs(["🔍 Single Review Analyzer", "📋 Batch Review Analyzer"])
 
     with mode[0]:
-        st.markdown("<div style='margin-bottom:.5rem;font-size:.8rem;color:#94A3B8'>Quick fill with template review →</div>", unsafe_allow_html=True)
-        qc1, qc2, qc3, qc4, qc5 = st.columns(5)
-        demo_idx = st.session_state.get("text_demo_idx", None)
-
-        if qc1.button("😊 Positive"):
-            st.session_state["text_demo_idx"] = 0
-            demo_idx = 0
-        if qc2.button("😞 Negative"):
-            st.session_state["text_demo_idx"] = 1
-            demo_idx = 1
-        if qc3.button("😐 Neutral"):
-            st.session_state["text_demo_idx"] = 2
-            demo_idx = 2
-        if qc4.button("💥 Crash Bug"):
-            st.session_state["text_demo_idx"] = 3
-            demo_idx = 3
-        if qc5.button("💳 Overpriced"):
-            st.session_state["text_demo_idx"] = 4
-            demo_idx = 4
-
-        analyzer_examples = [
-            "This app is absolutely amazing! The UI is clean and everything loads fast. Love the dark mode.",
-            "Keeps crashing every time I open it. Terrible experience. Uninstalling now.",
-            "Pretty average app. Does what it says but nothing special. Decent performance.",
-            "Frozen twice today. Can't even load the main screen. Crashes on startup. Please fix ASAP.",
-            "Expensive subscription and not worth the money. Overpriced and useless features."
-        ]
-
-        default_text = analyzer_examples[demo_idx] if demo_idx is not None else ""
         review_text = st.text_area(
             "Review Text Input",
-            value=default_text,
+            value="",
             height=140,
             placeholder="Paste a review here to analyze its sentiment & extract issue tags…",
             label_visibility="collapsed",
