@@ -38,6 +38,7 @@ def load_ml_models():
     model_path = "app_roberta_model"
     roberta_model = None
     roberta_tokenizer = None
+    roberta_error = None
     
     try:
         if os.path.exists(model_path) and os.path.isdir(model_path):
@@ -54,13 +55,14 @@ def load_ml_models():
             roberta_model.eval()
     except Exception as e:
         import traceback
+        roberta_error = f"{type(e).__name__}: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
         print(f"Error loading RoBERTa model: {e}")
         traceback.print_exc()
         # Fallbacks are handled gracefully at inference time
     
-    return tfidf, lr, nb, roberta_model, roberta_tokenizer
+    return tfidf, lr, nb, roberta_model, roberta_tokenizer, roberta_error
 
-tfidf_vectorizer, lr_model, nb_model, roberta_model, roberta_tokenizer = load_ml_models()
+tfidf_vectorizer, lr_model, nb_model, roberta_model, roberta_tokenizer, roberta_error = load_ml_models()
 
 # ── ML Helper Functions ───────────────────────────────────────────────────────
 def predict_ml(model, text: str) -> dict:
@@ -679,6 +681,8 @@ with st.sidebar:
 
     if classifier_model == "RoBERTa (Transformer)" and (roberta_model is None or roberta_tokenizer is None):
         st.warning("⚠️ RoBERTa model is unavailable (Hugging Face loading error). Falling back to Logistic Regression predictions.")
+        with st.expander("🔍 Diagnostic Error Details", expanded=True):
+            st.code(roberta_error or "No error message captured.")
 
     st.markdown("<hr style='border-color:#2A3A50;margin:0.8rem 0'>", unsafe_allow_html=True)
     st.markdown("<div style='font-size:0.75rem;color:#94A3B8;margin-bottom:0.4rem'>Active Dataset</div>", unsafe_allow_html=True)
