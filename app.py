@@ -36,13 +36,27 @@ def load_ml_models():
     # Load Roberta model and tokenizer locally if available, else from Hugging Face Hub
     import os
     model_path = "app_roberta_model"
-    if os.path.exists(model_path) and os.path.isdir(model_path):
-        roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
-        roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
-    else:
-        roberta_model = AutoModelForSequenceClassification.from_pretrained("Risikesan/cardiffnlp_roberta")
-        roberta_tokenizer = AutoTokenizer.from_pretrained("Risikesan/cardiffnlp_roberta")
-    roberta_model.eval()
+    roberta_model = None
+    roberta_tokenizer = None
+    
+    try:
+        if os.path.exists(model_path) and os.path.isdir(model_path):
+            roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+            roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
+        else:
+            # Force a writable cache directory on Streamlit Cloud (Linux)
+            if os.name != "nt":
+                os.environ["HF_HOME"] = "/tmp/huggingface_cache"
+                os.environ["TRANSFORMERS_CACHE"] = "/tmp/huggingface_cache"
+            roberta_model = AutoModelForSequenceClassification.from_pretrained("Risikesan/cardiffnlp_roberta")
+            roberta_tokenizer = AutoTokenizer.from_pretrained("Risikesan/cardiffnlp_roberta")
+        if roberta_model is not None:
+            roberta_model.eval()
+    except Exception as e:
+        import traceback
+        print(f"Error loading RoBERTa model: {e}")
+        traceback.print_exc()
+        # Fallbacks are handled gracefully at inference time
     
     return tfidf, lr, nb, roberta_model, roberta_tokenizer
 
@@ -87,6 +101,10 @@ def predict_roberta(text: str) -> dict:
             "word_count": 0
         }
     
+    if roberta_model is None or roberta_tokenizer is None:
+        # Fall back to Logistic Regression model
+        return predict_ml(lr_model, text)
+        
     inputs = roberta_tokenizer(text, return_tensors="pt")
     # Pop token_type_ids if present (needed for DistilBERT models)
     inputs.pop("token_type_ids", None)
@@ -658,6 +676,9 @@ with st.sidebar:
         label_visibility="collapsed",
         key="classifier_model"
     )
+
+    if classifier_model == "RoBERTa (Transformer)" and (roberta_model is None or roberta_tokenizer is None):
+        st.warning("⚠️ RoBERTa model is unavailable (Hugging Face loading error). Falling back to Logistic Regression predictions.")
 
     st.markdown("<hr style='border-color:#2A3A50;margin:0.8rem 0'>", unsafe_allow_html=True)
     st.markdown("<div style='font-size:0.75rem;color:#94A3B8;margin-bottom:0.4rem'>Active Dataset</div>", unsafe_allow_html=True)
