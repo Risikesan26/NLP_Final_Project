@@ -34,12 +34,9 @@ def load_ml_models():
         lr.multi_class = "auto"
     
     # Load RoBERTa (DistilBERT) model from the bundled local folder committed via Git LFS.
-    # use_safetensors=False forces PyTorch bin format (pytorch_model.bin) which is
-    # universally supported across all transformers versions including on Streamlit Cloud.
+    # pytorch_model.bin is present so transformers loads it automatically on all versions.
     model_path = "app_roberta_model"
-    roberta_model = AutoModelForSequenceClassification.from_pretrained(
-        model_path, use_safetensors=False
-    )
+    roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
     roberta_model.eval()
     
