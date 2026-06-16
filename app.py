@@ -33,9 +33,15 @@ def load_ml_models():
     if not hasattr(lr, "multi_class"):
         lr.multi_class = "auto"
     
-    # Load Roberta model and tokenizer from Hugging Face Hub
-    roberta_model = AutoModelForSequenceClassification.from_pretrained("Risikesan/cardiffnlp_roberta")
-    roberta_tokenizer = AutoTokenizer.from_pretrained("Risikesan/cardiffnlp_roberta")
+    # Load Roberta model and tokenizer locally if available, else from Hugging Face Hub
+    import os
+    model_path = "app_roberta_model"
+    if os.path.exists(model_path) and os.path.isdir(model_path):
+        roberta_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        roberta_tokenizer = AutoTokenizer.from_pretrained(model_path)
+    else:
+        roberta_model = AutoModelForSequenceClassification.from_pretrained("Risikesan/cardiffnlp_roberta")
+        roberta_tokenizer = AutoTokenizer.from_pretrained("Risikesan/cardiffnlp_roberta")
     roberta_model.eval()
     
     return tfidf, lr, nb, roberta_model, roberta_tokenizer
@@ -82,12 +88,20 @@ def predict_roberta(text: str) -> dict:
         }
     
     inputs = roberta_tokenizer(text, return_tensors="pt")
+    # Pop token_type_ids if present (needed for DistilBERT models)
+    inputs.pop("token_type_ids", None)
     with torch.no_grad():
         outputs = roberta_model(**inputs)
         logits = outputs.logits
         probs = F.softmax(logits, dim=-1).squeeze().tolist()
         
-    classes = ["Negative", "Neutral", "Positive"]
+    # Dynamically extract classes from model configuration
+    if hasattr(roberta_model.config, "id2label") and roberta_model.config.id2label:
+        id2label = roberta_model.config.id2label
+        classes = [id2label[i] for i in sorted(id2label.keys(), key=lambda x: int(x))]
+    else:
+        classes = ["Negative", "Neutral", "Positive"]
+        
     pred_idx = int(np.argmax(probs))
     pred = classes[pred_idx]
     confidence = int(probs[pred_idx] * 100)
