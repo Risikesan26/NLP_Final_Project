@@ -887,7 +887,7 @@ if page == "🏠 Home":
         <div class='section-label'>NLP Classifier Dashboard</div>
         <div class='hero-title'>ReviewLens<br><span>Sentiment Classifier</span></div>
         <div style='font-size:1.05rem;color:#94a3b8;margin-top:1rem;max-width:640px;line-height:1.7'>
-            ReviewLens is an intelligent machine learning and deep learning natural language processing application designed to analyze mobile app reviews from Google Play & the App Store. The system instantly classifies sentiment, detects common product issues, and surfaces trends so product teams can act before users churn.
+            ReviewLens is an intelligent NLP application designed to analyze mobile app reviews. It instantly classifies sentiment, detects common product issues like bugs or crashes, and surfaces key trends so your team can act before users churn.
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -928,48 +928,42 @@ if page == "🏠 Home":
 
     with col_l:
         st.markdown("""
-        <div class='card' style='height: 100%; min-height: 380px;'>
-            <div class='section-label'>What Problem We're Solving</div>
+        <div class='card' style='height: 100%; min-height: 320px;'>
+            <div class='section-label'>What We Solve</div>
             <div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.2rem;font-weight:700;color:#F8FAFC;margin-bottom:.8rem'>
-                Reviews are gold — but often go unread
+                Valuable feedback gets lost
             </div>
             <div style='color:#94a3b8;font-size:0.9rem;line-height:1.8'>
-                The average app on Google Play & App Store receives <b>thousands</b> of reviews per month. 
-                Product teams manually read a tiny fraction, missing critical signals about crashes, 
-                billing issues, and UX pain-points — <em>until users leave.</em>
-            </div>
-            <br>
-            <div style='color:#94a3b8;font-size:0.9rem;line-height:1.8'>
-                ReviewLens automates this signal extraction by utilizing advanced Machine Learning and Transformer models. 
-                It surfaces immediate product bugs, security vulnerabilities, connectivity drops, and interface lags 
-                so your team can focus on fixes, not reading spreadsheets.
+                The average app receives thousands of reviews, but product teams manually read only a tiny fraction. This means critical signals about crashes, billing issues, and UX pain points often go unnoticed. 
+                <br><br>
+                ReviewLens automates this process using advanced Machine Learning models, instantly surfacing bugs and feature requests so you never miss a vital piece of user feedback.
             </div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_r:
         st.markdown("""
-        <div class='card' style='height: 100%; min-height: 380px;'>
-            <div class='section-label'>How to Use the App</div>
+        <div class='card' style='height: 100%; min-height: 320px;'>
+            <div class='section-label'>Getting Started</div>
             <div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.2rem;font-weight:700;color:#F8FAFC;margin-bottom:.8rem'>
-                Quick Start Steps
+                How to use ReviewLens
             </div>
             <div style='color:#94a3b8;font-size:0.88rem;line-height:1.8'>
                 <div style='display:flex;align-items:flex-start;gap:.7rem;margin-bottom:.7rem'>
                     <span style='background:#1E293B;border:1px solid #2A3A50;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:.7rem;color:#FBBF24;flex-shrink:0'>1</span>
-                    <span><b>Select a Page:</b> Use the sidebar selectbox to navigate between Home, Text Analyzer, Data Explorer, Visualizations, and Model Info.</span>
+                    <span><b>Navigate:</b> Use the sidebar to explore the Text Analyzer, Data Explorer, and Visualizations.</span>
                 </div>
                 <div style='display:flex;align-items:flex-start;gap:.7rem;margin-bottom:.7rem'>
                     <span style='background:#1E293B;border:1px solid #2A3A50;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:.7rem;color:#38BDF8;flex-shrink:0'>2</span>
-                    <span><b>Analyze Text:</b> Input a single review or multiple lines of text in the <b>Text Analyzer</b> tab to get instant sentiment tags and keyword matching highlights.</span>
+                    <span><b>Analyze Text:</b> Paste individual reviews to instantly identify sentiment and extract issue tags.</span>
                 </div>
                 <div style='display:flex;align-items:flex-start;gap:.7rem;margin-bottom:.7rem'>
                     <span style='background:#1E293B;border:1px solid #2A3A50;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:.7rem;color:#34D399;flex-shrink:0'>3</span>
-                    <span><b>Manage Datasets:</b> Toggle between the built-in <b>Demo Dataset</b> or upload your own CSV files in the <b>Data Explorer</b> page.</span>
+                    <span><b>Manage Data:</b> Upload your own CSV datasets or explore the built-in demo datasets.</span>
                 </div>
-                <div style='display:flex;align-items:flex-start;gap:.7rem'>
+                <div style='display:flex;align-items:flex-start;gap:.7rem;margin-bottom:.7rem'>
                     <span style='background:#1E293B;border:1px solid #2A3A50;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:.7rem;color:#A78BFA;flex-shrink:0'>4</span>
-                    <span><b>Filter & Export:</b> Apply date filters, search terms, and rating criteria to export classified reports or view dynamic trends on the <b>Visualizations</b> dashboard.</span>
+                    <span><b>Discover Trends:</b> Visualize patterns, filter by issue types, and export detailed reports.</span>
                 </div>
             </div>
         </div>
@@ -986,9 +980,9 @@ if page == "🏠 Home":
     t1, t2, t3, t4 = st.columns(4)
     for col, (name, role, desc) in zip([t1, t2, t3, t4], team):
         col.markdown(f"""
-        <div class='card' style='text-align:center'>
-            <div style='font-family:Plus Jakarta Sans,sans-serif;font-weight:700;color:#F8FAFC;margin-top:.4rem'>{name}</div>
-            <div style='color:#FBBF24;font-size:.75rem;margin:.2rem 0'>{role}</div>
+        <div class='card' style='text-align:center; height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center;'>
+            <div style='font-family:Plus Jakarta Sans,sans-serif;font-weight:700;color:#F8FAFC;'>{name}</div>
+            <div style='color:#FBBF24;font-size:.75rem;margin:.3rem 0'>{role}</div>
             <div style='color:#94A3B8;font-size:.78rem'>{desc}</div>
         </div>
         """, unsafe_allow_html=True)
