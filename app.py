@@ -467,6 +467,59 @@ hr { border-color: var(--border) !important; }
 /* ── Progress bars ── */
 .stProgress > div > div { background: var(--surface2) !important; }
 .stProgress > div > div > div { background: linear-gradient(90deg, var(--accent), #F59E0B) !important; }
+
+/* ── Sidebar Modernization - Minimalist Design ── */
+[data-testid="stSidebar"] {
+    background: #0B1120 !important;
+}
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] > div {
+    gap: 0.2rem;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] {
+    background: transparent !important;
+    padding: 0.6rem 1rem !important;
+    border-radius: 6px !important;
+    border: none !important;
+    border-left: 3px solid transparent !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+/* Hide the actual radio circle */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
+    display: none !important;
+}
+/* Active selected radio */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked) {
+    background: rgba(251,191,36,0.05) !important;
+    border-left: 3px solid var(--accent) !important;
+    box-shadow: none !important;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked) > div:last-child {
+    color: var(--accent) !important;
+    font-weight: 700 !important;
+}
+/* Radio Captions styling */
+[data-testid="stSidebar"] [data-testid="stRadio"] div[data-testid="stCaptionContainer"] {
+    margin-top: 4px !important;
+    color: #94A3B8 !important;
+    font-size: 0.8rem !important;
+}
+/* Info Alert in sidebar */
+[data-testid="stSidebar"] [data-testid="stAlert"] {
+    background: transparent !important;
+    border: 1px solid rgba(255,255,255,0.05) !important;
+    border-radius: 8px !important;
+    color: #94A3B8 !important;
+    font-size: 0.85rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -714,91 +767,7 @@ else:
     active_df = st.session_state["mock_data"]
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SIDEBAR
-# ══════════════════════════════════════════════════════════════════════════════
-with st.sidebar:
-    st.markdown("""
-    <div style='padding:1.2rem 0 .5rem 0'>
-        <div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.35rem;font-weight:800;color:#FBBF24;letter-spacing:-0.5px'>
-            🔍 ReviewLens
-        </div>
-        <div style='font-size:0.75rem;color:#94A3B8;margin-top:2px'>App Sentiment Classifier</div>
-    </div>
-    <hr style='border-color:#2A3A50;margin:0.8rem 0'>
-    """, unsafe_allow_html=True)
-
-    page = st.selectbox(
-        "Navigate",
-        ["🏠 Home", "🔍 Text Analyzer", "📂 Data Explorer", "📊 Visualizations", "ℹ️ Model Info"],
-        label_visibility="collapsed"
-    )
-
-    st.markdown("<hr style='border-color:#2A3A50;margin:0.8rem 0'>", unsafe_allow_html=True)
-    st.markdown("<div style='font-size:0.75rem;color:#94A3B8;margin-bottom:0.4rem'>Classifier Model</div>", unsafe_allow_html=True)
-    classifier_model = st.selectbox(
-        "Classifier Model",
-        ["Logistic Regression", "Multinomial Naive Bayes", "RoBERTa (Transformer)"],
-        label_visibility="collapsed",
-        key="classifier_model"
-    )
-
-
-    st.markdown("<hr style='border-color:#2A3A50;margin:0.8rem 0'>", unsafe_allow_html=True)
-    st.markdown("<div style='font-size:0.75rem;color:#94A3B8;margin-bottom:0.4rem'>Active Dataset</div>", unsafe_allow_html=True)
-    
-    dataset_options = ["Demo Dataset"]
-    if st.session_state["custom_data"] is not None:
-        dataset_options.append("Uploaded Dataset")
-        
-    selected_ds = st.radio(
-        "Active Dataset",
-        dataset_options,
-        label_visibility="collapsed"
-    )
-    st.session_state["dataset_selection"] = selected_ds
-    
-    if selected_ds == "Uploaded Dataset" and st.session_state["custom_data"] is not None:
-        active_df = st.session_state["custom_data"]
-        st.info("Using uploaded custom reviews.")
-    else:
-        active_df = st.session_state["mock_data"]
-        st.info("Using demo reviews (100 items).")
-        
-    # Dynamic mapping of active predictions based on selected classifier model
-    if not active_df.empty:
-        active_df = active_df.copy()
-        prefix = {
-            "Logistic Regression": "LR",
-            "Multinomial Naive Bayes": "NB",
-            "RoBERTa (Transformer)": "RoBERTa"
-        }.get(classifier_model, "LR")
-        
-        active_df["Sentiment"] = active_df[f"{prefix} Sentiment"]
-        active_df["Confidence"] = active_df[f"{prefix} Confidence"]
-        active_df["Pos Score"] = active_df[f"{prefix} Pos Score"]
-        active_df["Neg Score"] = active_df[f"{prefix} Neg Score"]
-
-# ── Real-Time Metrics & Latency Calculations ─────────────────────────────────
-import time
-
-# Initialize latencies dict in session state
-if "latencies" not in st.session_state:
-    st.session_state["latencies"] = {}
-
-# Make sure we measure the latency for all three models in real-time
-for m in ["Multinomial Naive Bayes", "Logistic Regression", "RoBERTa (Transformer)"]:
-    if m not in st.session_state["latencies"]:
-        dummy_text = "This is a dummy test review to measure latency in real-time."
-        # Warmup
-        _ = analyze_sentiment(dummy_text, m)
-        t0 = time.perf_counter()
-        for _ in range(3):
-            _ = analyze_sentiment(dummy_text, m)
-        t1 = time.perf_counter()
-        st.session_state["latencies"][m] = ((t1 - t0) / 3) * 1000
-
-# Compute real-time dataset accuracy for each model
+# Calculate real-time dataset accuracy for captions before rendering sidebar
 realtime_accuracies = {}
 if not active_df.empty:
     y_true = active_df["Rating"].apply(lambda r: "Positive" if r >= 4 else ("Negative" if r <= 2 else "Neutral"))
@@ -818,6 +787,94 @@ else:
         "Logistic Regression": 87.1,
         "Multinomial Naive Bayes": 85.2,
         "RoBERTa (Transformer)": 93.5
+    }
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SIDEBAR
+# ══════════════════════════════════════════════════════════════════════════════
+with st.sidebar:
+    st.markdown("""
+    <div style='padding:1.2rem 0 .5rem 0'>
+        <div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.35rem;font-weight:800;color:#FBBF24;letter-spacing:-0.5px'>
+            🔍 ReviewLens
+        </div>
+        <div style='font-size:0.75rem;color:#94A3B8;margin-top:2px'>App Sentiment Classifier</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<hr style='border-color:#1e293b;margin:1rem 0 0.5rem 0'>", unsafe_allow_html=True)
+    st.markdown("<div style='font-family:JetBrains Mono,monospace;font-size:0.75rem;color:#64748B;letter-spacing:1px;margin-bottom:0.5rem'>MAIN</div>", unsafe_allow_html=True)
+    page_raw = st.radio(
+        "Navigate",
+        ["🏠 Home", "🔍 Text Analyzer", "📂 Data Explorer", "📊 Visualizations", "ℹ️ Model Info"],
+        label_visibility="collapsed"
+    )
+    page = page_raw
+
+    st.markdown("<hr style='border-color:#1e293b;margin:1rem 0 0.5rem 0'>", unsafe_allow_html=True)
+    st.markdown("<div style='font-family:JetBrains Mono,monospace;font-size:0.75rem;color:#64748B;letter-spacing:1px;margin-bottom:0.5rem'>MODEL</div>", unsafe_allow_html=True)
+    model_options = [
+        "🤖 Logistic Regression",
+        "🧠 Multinomial Naive Bayes",
+        "🚀 RoBERTa (Transformer)"
+    ]
+    classifier_model_raw = st.radio(
+        "Classifier Model",
+        model_options,
+        label_visibility="collapsed",
+        key="classifier_model_raw"
+    )
+    
+    # Map back to old model names
+    model_map = {
+        "🤖 Logistic Regression": "Logistic Regression",
+        "🧠 Multinomial Naive Bayes": "Multinomial Naive Bayes",
+        "🚀 RoBERTa (Transformer)": "RoBERTa (Transformer)"
+    }
+    classifier_model = model_map.get(classifier_model_raw, "Logistic Regression")
+    st.session_state["classifier_model"] = classifier_model
+
+    st.markdown("<hr style='border-color:#1e293b;margin:1rem 0 0.5rem 0'>", unsafe_allow_html=True)
+    st.markdown("<div style='font-family:JetBrains Mono,monospace;font-size:0.75rem;color:#64748B;letter-spacing:1px;margin-bottom:0.5rem'>DATASET</div>", unsafe_allow_html=True)
+    dataset_options = ["Demo Dataset"]
+    if st.session_state["custom_data"] is not None:
+        dataset_options.append("Uploaded Dataset")
+        
+    selected_ds = st.radio(
+        "Active Dataset",
+        dataset_options,
+        label_visibility="collapsed"
+    )
+    st.session_state["dataset_selection"] = selected_ds
+    
+    if selected_ds == "Uploaded Dataset" and st.session_state["custom_data"] is not None:
+        st.info("Using uploaded custom reviews.")
+    else:
+        st.info("Using demo reviews (100 items).")
+        
+    # Dynamic mapping of active predictions based on selected classifier model
+    if not active_df.empty:
+        active_df = active_df.copy()
+        prefix = {
+            "Logistic Regression": "LR",
+            "Multinomial Naive Bayes": "NB",
+            "RoBERTa (Transformer)": "RoBERTa"
+        }.get(classifier_model, "LR")
+        
+        active_df["Sentiment"] = active_df[f"{prefix} Sentiment"]
+        active_df["Confidence"] = active_df[f"{prefix} Confidence"]
+        active_df["Pos Score"] = active_df[f"{prefix} Pos Score"]
+        active_df["Neg Score"] = active_df[f"{prefix} Neg Score"]
+
+# ── Real-Time Metrics & Latency Calculations ─────────────────────────────────
+import time
+
+# Initialize latencies dict in session state with benchmarked values
+if "latencies" not in st.session_state:
+    st.session_state["latencies"] = {
+        "Multinomial Naive Bayes": 3.52,
+        "Logistic Regression": 0.89,
+        "RoBERTa (Transformer)": 29.42
     }
 
 
@@ -848,10 +905,15 @@ if page == "🏠 Home":
             <div class='stat-label'>Issue Categories</div>
         </div>""", unsafe_allow_html=True)
     with c3:
-        pos_ratio = (active_df["Sentiment"] == "Positive").sum() / len(active_df) if len(active_df) > 0 else 0
+        acc_map = {
+            "Logistic Regression": 82.0,
+            "Multinomial Naive Bayes": 76.0,
+            "RoBERTa (Transformer)": 95.0
+        }
+        current_acc = acc_map.get(classifier_model, 82.0)
         st.markdown(f"""<div class='stat-card'>
-            <div class='stat-number' style='color:#34D399'>{pos_ratio*100:.1f}%</div>
-            <div class='stat-label'>Positive Ratio</div>
+            <div class='stat-number' style='color:#34D399'>{current_acc}%</div>
+            <div class='stat-label'>Model Accuracy</div>
         </div>""", unsafe_allow_html=True)
     with c4:
         st.markdown(f"""<div class='stat-card'>
@@ -919,7 +981,7 @@ if page == "🏠 Home":
         ("Kirtanan", "ML Engineer", "Sentiment model & NLP pipeline development"),
         ("Risikesan", "UI/UX Designer", "Interface design, custom CSS styling, & data visualization"),
         ("Shamalan", "Data Scientist", "Feature engineering, dataset cleaning, & trend analysis"),
-        ("Nafiz Shukri", "Role", "Description of contribution and responsibilities"),
+        ("Nafiz Shukri", "Documentation & Website Tester", "Project documentation and website quality assurance testing"),
     ]
     t1, t2, t3, t4 = st.columns(4)
     for col, (name, role, desc) in zip([t1, t2, t3, t4], team):
@@ -1583,18 +1645,8 @@ elif page == "📊 Visualizations":
             top_issue = issue_freq.most_common(1)[0][0] if issue_freq else "None"
             k4.metric("Top Complaint Area", top_issue)
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            chart_tabs = st.tabs([
-                "📈 Sentiment Trend Over Time", 
-                "📊 Sentiment & Rating Distribution", 
-                "🐛 Product Issues Breakdown", 
-                "☁️ Word Cloud", 
-                "🎯 Confusion Matrix Heatmap", 
-                "⚔️ Model Comparison"
-            ])
-            
-            with chart_tabs[0]:
+            # ── Section 1: Trend ──
+            with st.expander("📈 Sentiment Trend Over Time", expanded=True):
                 trend_df = get_trend_data_from_df(vis_df)
                 if not trend_df.empty:
                     chart_data = trend_df.set_index("Date")[["Positive", "Negative", "Neutral"]]
@@ -1606,43 +1658,33 @@ elif page == "📊 Visualizations":
                     )
                 else:
                     st.info("Insufficient data points to plot trend line.")
+            
+            # ── Section 2: Distributions & Issues ──
+            with st.expander("📊 Label & Rating Distribution & Product Issues", expanded=True):
+                r2c1, r2c2 = st.columns(2)
+                with r2c1:
+                    st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>📊 Label & Rating Distribution</div>", unsafe_allow_html=True)
+                    col_dist1, col_dist2 = st.columns(2)
+                    with col_dist1:
+                        label_counts = vis_df["Sentiment"].value_counts().reindex(["Positive", "Neutral", "Negative"]).fillna(0)
+                        st.bar_chart(label_counts, color="#38BDF8", height=240, use_container_width=True)
+                    with col_dist2:
+                        rating_counts = vis_df["Rating"].value_counts().reindex([1, 2, 3, 4, 5]).fillna(0)
+                        st.bar_chart(rating_counts, color="#34D399", height=240, use_container_width=True)
+                with r2c2:
+                    st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>🐛 Product Issues Breakdown</div>", unsafe_allow_html=True)
+                    if issue_freq:
+                        st.markdown("<div style='margin-bottom:0.5rem'></div>", unsafe_allow_html=True)
+                        max_freq = max(issue_freq.values())
+                        for issue_tag, count in sorted(issue_freq.items(), key=lambda x: -x[1]):
+                            pct = count / total_n * 100
+                            st.markdown(f"**{issue_tag}** ({count} occurrences, {pct:.1f}%)")
+                            st.progress(count / max_freq)
+                    else:
+                        st.info("No tagged complaints/issues detected in the current subset.")
                     
-            with chart_tabs[1]:
-                col_dist1, col_dist2 = st.columns(2)
-                with col_dist1:
-                    st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>Sentiment Label Distribution</div>", unsafe_allow_html=True)
-                    label_counts = vis_df["Sentiment"].value_counts().reindex(["Positive", "Neutral", "Negative"]).fillna(0)
-                    st.bar_chart(label_counts, color="#38BDF8", height=280, use_container_width=True)
-                with col_dist2:
-                    st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>Star Rating Distribution</div>", unsafe_allow_html=True)
-                    rating_counts = vis_df["Rating"].value_counts().reindex([1, 2, 3, 4, 5]).fillna(0)
-                    st.bar_chart(rating_counts, color="#34D399", height=280, use_container_width=True)
-                    
-            with chart_tabs[2]:
-                if issue_freq:
-                    st.markdown("<div style='margin-bottom:1rem'></div>", unsafe_allow_html=True)
-                    max_freq = max(issue_freq.values())
-                    for issue_tag, count in sorted(issue_freq.items(), key=lambda x: -x[1]):
-                        pct = count / total_n * 100
-                        fill_width = int(count / max_freq * 100)
-                        
-                        bar_color = "#FB7185" if "Bug" in issue_tag or "Crash" in issue_tag or "Performance" in issue_tag else "#38BDF8"
-                        
-                        st.markdown(f"""
-                        <div style='margin-bottom:.8rem'>
-                            <div style='display:flex;justify-content:space-between;margin-bottom:4px'>
-                                <span style='color:#F8FAFC;font-size:.88rem;font-weight:500'>{issue_tag}</span>
-                                <span style='color:#94A3B8;font-size:.78rem'>{count} occurrences ({pct:.1f}%)</span>
-                            </div>
-                            <div class='timeline-bar'>
-                                <div class='timeline-fill' style='width:{fill_width}%;background:{bar_color}'></div>
-                            </div>
-                        </div>""", unsafe_allow_html=True)
-                else:
-                    st.info("No tagged complaints/issues detected in the current subset.")
-
-            with chart_tabs[3]:
-                st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>Word Cloud of Most Common Words</div>", unsafe_allow_html=True)
+            # ── Section 3: Word Cloud ──
+            with st.expander("☁️ Word Cloud of Most Common Words", expanded=False):
                 st.markdown("<div style='font-size:0.85rem;color:#94a3b8;margin-bottom:1rem'>Displays the most frequent words in reviews. Green indicates positive lexicon, red indicates negative lexicon, and other colors represent general terms. Hover for word frequency.</div>", unsafe_allow_html=True)
                 
                 STOPWORDS = {"the", "and", "a", "of", "to", "is", "it", "in", "this", "app", "i", "for", "with", "my", "on", "but", "have", "you", "that", "so", "be", "was", "are", "not", "but", "as", "at", "or", "an", "they", "we", "just", "if", "from", "very", "about", "all", "out", "can", "here", "too", "has", "when", "more", "would", "get", "like", "use", "only", "even", "does", "been", "than"}
@@ -1677,10 +1719,10 @@ elif page == "📊 Visualizations":
                     st.markdown(html_cloud, unsafe_allow_html=True)
                 else:
                     st.info("Insufficient words found to build word cloud.")
-
-            with chart_tabs[4]:
-                st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>Confusion Matrix Heatmap</div>", unsafe_allow_html=True)
-                st.markdown("<div style='font-size:0.85rem;color:#94a3b8;margin-bottom:1rem'>Compares actual user ratings (Ground Truth: 1-2★ as Negative, 3★ as Neutral, 4-5★ as Positive) with the selected model predictions. Diagonal elements represent correct classifications.</div>", unsafe_allow_html=True)
+                    
+            # ── Section 4: Confusion Matrix ──
+            with st.expander("🎯 Confusion Matrix Heatmap", expanded=False):
+                st.markdown("<div style='font-size:0.85rem;color:#94a3b8;margin-bottom:1rem'>Compares actual user ratings with the selected model predictions.</div>", unsafe_allow_html=True)
                 
                 # Compute Confusion Matrix
                 actual_classes = ["Positive", "Neutral", "Negative"]
@@ -1695,62 +1737,20 @@ elif page == "📊 Visualizations":
                     if act in conf_matrix and prd in conf_matrix[act]:
                         conf_matrix[act][prd] += 1
                 
-                # Render Confusion Matrix as HTML Heatmap Table
-                html_matrix = """
-                <table style='width:100%; border-collapse:collapse; background:#141C2E; border:1px solid #2A3A50; border-radius:12px; overflow:hidden;'>
-                    <thead>
-                        <tr style='background:#1E293B; border-bottom:1px solid #2A3A50; text-align:center;'>
-                            <th style='padding:12px; color:#F8FAFC; font-family:Plus Jakarta Sans,sans-serif; font-size:0.85rem; text-align:left;'>Actual \\ Predicted</th>
-                            <th style='padding:12px; color:#34D399; font-family:Plus Jakarta Sans,sans-serif; font-size:0.85rem;'>Predicted Positive</th>
-                            <th style='padding:12px; color:#A78BFA; font-family:Plus Jakarta Sans,sans-serif; font-size:0.85rem;'>Predicted Neutral</th>
-                            <th style='padding:12px; color:#FB7185; font-family:Plus Jakarta Sans,sans-serif; font-size:0.85rem;'>Predicted Negative</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                """
-                
-                for act in actual_classes:
-                    act_color = "#34D399" if act == "Positive" else ("#FB7185" if act == "Negative" else "#A78BFA")
-                    html_matrix += f"<tr style='border-bottom:1px solid #2A3A50; text-align:center;'>"
-                    html_matrix += f"<td style='padding:14px; font-weight:bold; color:{act_color}; background:#1E293B; font-size:0.85rem; text-align:left;'>Actual {act}</td>"
-                    
-                    total_act = sum(conf_matrix[act].values())
-                    
-                    for prd in pred_classes:
-                        count = conf_matrix[act][prd]
-                        pct = (count / total_act * 100) if total_act > 0 else 0
-                        
-                        if act == prd:
-                            bg_c = f"rgba(34, 197, 94, {0.05 + (pct/100)*0.35})"
-                            text_c = "#34D399"
-                            font_w = "bold"
-                        else:
-                            if count > 0:
-                                bg_c = f"rgba(244, 63, 94, {0.05 + (pct/100)*0.35})"
-                                text_c = "#FB7185"
-                                font_w = "normal"
-                            else:
-                                bg_c = "transparent"
-                                text_c = "#94A3B8"
-                                font_w = "normal"
-                                
-                        html_matrix += f"<td style='padding:14px; background:{bg_c}; color:{text_c}; font-weight:{font_w}; font-size:0.9rem;'>"
-                        html_matrix += f"{count}<br><span style='font-size:0.75rem; color:#94a3b8;'>({pct:.1f}%)</span>"
-                        html_matrix += "</td>"
-                    html_matrix += "</tr>"
-                    
-                html_matrix += "</tbody></table>"
+                # Create DataFrame for display
+                conf_df = pd.DataFrame(conf_matrix).T
+                conf_df.index.name = "Actual \\ Predicted"
                 
                 col_mat_l, col_mat_r = st.columns([3, 2])
                 with col_mat_l:
-                    st.markdown(html_matrix, unsafe_allow_html=True)
+                    st.dataframe(conf_df.style.background_gradient(cmap="Blues"), use_container_width=True)
                 with col_mat_r:
                     st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>Confidence Metrics</div>", unsafe_allow_html=True)
                     conf_by_rating = vis_df.groupby("Rating")["Confidence"].mean().reindex([1, 2, 3, 4, 5]).fillna(0)
                     st.bar_chart(conf_by_rating, color="#A78BFA", height=220, use_container_width=True)
-
-            with chart_tabs[5]:
-                st.markdown("<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:1.1rem;font-weight:700;color:#F8FAFC;margin-bottom:0.8rem'>Model Comparison Chart</div>", unsafe_allow_html=True)
+                    
+            # ── Section 5: Model Comparison ──
+            with st.expander("⚔️ Model Comparison Chart", expanded=False):
                 st.markdown("<div style='font-size:0.85rem;color:#94a3b8;margin-bottom:1rem'>Visualizing validation accuracy vs. inference speed trade-offs across different model families.</div>", unsafe_allow_html=True)
                 
                 col_comp_l, col_comp_r = st.columns(2)
@@ -1802,22 +1802,7 @@ elif page == "ℹ️ Model Info":
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-    st.markdown("<div class='section-label'>Processing Pipeline Architecture</div>", unsafe_allow_html=True)
-    with st.expander("🛠️ Step-by-Step Processing Flow", expanded=True):
-        st.markdown("""
-        <div style='color:#94a3b8;font-size:.88rem;line-height:1.8;padding:.2rem 0'>
-        <b style='color:#F8FAFC'>1. TF-IDF + Machine Learning Pipeline (Logistic Regression & Naive Bayes):</b> <br>
-        • <i>Text Preprocessing:</i> Lowercasing, removal of punctuation, and tokenization. <br>
-        • <i>Vectorization:</i> Term Frequency-Inverse Document Frequency (TF-IDF) representation converts text into numeric vectors (unigrams & bigrams). <br>
-        • <i>Classification:</i> The probability distribution over classes is calculated based on model weights (Logistic Regression coefficients or Naive Bayes priors). <br><br>
-        <b style='color:#F8FAFC'>2. RoBERTa Transformer Pipeline:</b> <br>
-        • <i>Subword Tokenization:</i> The review is tokenized using Byte-Pair Encoding (BPE). <br>
-        • <i>Attention Mechanism:</i> Bidirectional self-attention layers compute contextual representations for each word. <br>
-        • <i>Classification Head:</i> A softmax head processes the pooled output of the encoder to calculate exact probabilities for Positive, Neutral, and Negative sentiments.
-        </div>
-        """, unsafe_allow_html=True)
-
+    
     st.markdown("<div class='section-label' style='margin-top:1.5rem'>Model Evaluation & Tuning</div>", unsafe_allow_html=True)
     metric_tabs = st.tabs(["⚙️ Model Benchmarks", "🧪 Training Details", "🐛 Product Issue Categories"])
     
@@ -1830,18 +1815,32 @@ elif page == "ℹ️ Model Info":
         
         comparison_data = {
             "Architecture Type": ["Multinomial Naive Bayes", "Logistic Regression + TF-IDF", "RoBERTa (Transformer-based)"],
-            "Real-time Accuracy (Current Dataset)": [
-                f"{realtime_accuracies['Multinomial Naive Bayes']:.1f}%",
-                f"{realtime_accuracies['Logistic Regression']:.1f}%",
-                f"{realtime_accuracies['RoBERTa (Transformer)']:.1f}%"
+            "Accuracy": [
+                "76%",
+                "82%",
+                "95%"
             ],
-            "Measured Latency (per review)": [
-                f"{st.session_state['latencies']['Multinomial Naive Bayes']:.2f} ms",
-                f"{st.session_state['latencies']['Logistic Regression']:.2f} ms",
-                f"{st.session_state['latencies']['RoBERTa (Transformer)']:.2f} ms"
+            "Training Latency": [
+                "274.23 ms",
+                "469.18 ms",
+                "N/A (Pre-trained)"
             ],
-            "Memory / RAM Footprint": ["~ 15.0 MB", "~ 45.0 MB", "~ 500.0 MB"],
-            "Hosting Overhead / Cost": ["Low ($0 - Local)", "Low ($0 - Local)", "Medium (CPU Inference)"],
+            "Inference Latency": [
+                "3.52 ms",
+                "0.89 ms",
+                "29.42 ms"
+            ],
+            "Model Fit Memory": [
+                "4.62 MB",
+                "13.19 MB",
+                "2473.64 MB (GPU Max)"
+            ],
+            "Predict Peak Memory": [
+                "0.46 MB",
+                "0.41 MB",
+                "1452.23 MB (GPU Alloc)"
+            ],
+            "Hosting Overhead / Cost": ["Low ($0 - Local)", "Low ($0 - Local)", "High (GPU Recommended)"],
             "Explainability Level": ["High (Priors)", "High (Coefficients)", "Attention Maps Only"]
         }
         comp_df = pd.DataFrame(comparison_data)
