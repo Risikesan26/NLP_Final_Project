@@ -9,3 +9,5 @@ torch
 transformers
 huggingface_hub
 safetensors
+matplotlib
+jinja2
