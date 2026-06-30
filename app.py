@@ -1004,9 +1004,21 @@ elif page == "🔍 Text Analyzer":
     mode = st.tabs(["🔍 Single Review Analyzer", "📋 Batch Review Analyzer"])
 
     with mode[0]:
+        # Mock data loader for testing
+        col1, col2 = st.columns([8, 2])
+        with col2:
+            if st.button("🎲 Load Mock Data", use_container_width=True):
+                mock_reviews = [
+                    "Absolutely love this app! The interface is clean, and it's incredibly fast.",
+                    "Terrible experience. It crashes every time I try to upload a photo. Please fix this.",
+                    "The app is okay. It does the job but the navigation is a bit confusing.",
+                    "Five stars! The customer support was very helpful when I had an issue.",
+                    "I paid for the premium version and didn't get the features. Total scam."
+                ]
+                st.session_state.single_analyzer_text = random.choice(mock_reviews)
+
         review_text = st.text_area(
             "Review Text Input",
-            value="",
             height=140,
             placeholder="Paste a review here to analyze its sentiment & extract issue tags…",
             label_visibility="collapsed",
@@ -1175,9 +1187,20 @@ elif page == "🔍 Text Analyzer":
     with mode[1]:
         st.markdown("<div style='font-size:0.88rem;color:#94a3b8;margin-bottom:1rem'>Enter multiple reviews below (one review per line) to process in batch.</div>", unsafe_allow_html=True)
         
-        batch_demo = st.toggle("Pre-fill with Demo Batch (12 reviews)", value=True, key="batch_demo_toggle")
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            batch_demo = st.toggle("Pre-fill with Demo Batch (12 reviews)", value=True, key="batch_demo_toggle")
+        with col_t2:
+            test_dataset_demo = st.toggle("Pre-fill with Test Dataset", value=False, key="test_dataset_demo_toggle")
         
-        if batch_demo:
+        if test_dataset_demo:
+            try:
+                import pandas as pd
+                test_df = pd.read_csv("test_reviews.csv")
+                batch_default = "\n".join(test_df["Review"].astype(str).tolist())
+            except Exception:
+                batch_default = "Error loading test dataset."
+        elif batch_demo:
             batch_default = "\n".join([
                 "This app is absolutely amazing! The UI is clean and everything loads fast. Love the dark mode.",
                 "Keeps crashing every time I open it. Terrible experience. Uninstalling now.",
